@@ -1,29 +1,96 @@
-version: "3.9"
-
 services:
-  cs16:
+
+  cs16-dm:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    container_name: cs16-server
-    env_file:
-      - .env
-    ports:
-      - "${SERVER_PORT}:27015/udp"
-      - "${SERVER_PORT}:27015/tcp"
+    container_name: cs16-dm
+    hostname: cs16-dm
     restart: unless-stopped
+    environment:
+      MODE: dm
+      PORT: 27015
+      MAP: de_dust2
+      MAXPLAYERS: 32
+      HOSTNAME: "CS16 Platform | DeathMatch"
+    ports:
+      - "27015:27015/udp"
+      - "27015:27015/tcp"
+    volumes:
+      - ../server/dm:/opt/cs16
+
+  cs16-5v5:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: cs16-5v5
+    hostname: cs16-5v5
+    restart: unless-stopped
+    environment:
+      MODE: competitive
+      PORT: 27016
+      MAP: de_inferno
+      MAXPLAYERS: 10
+      HOSTNAME: "CS16 Platform | 5v5"
+    ports:
+      - "27016:27016/udp"
+      - "27016:27016/tcp"
+    volumes:
+      - ../server/competitive:/opt/cs16
+
+  cs16-3v3:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: cs16-3v3
+    hostname: cs16-3v3
+    restart: unless-stopped
+    environment:
+      MODE: arena
+      PORT: 27017
+      MAP: de_nuke
+      MAXPLAYERS: 6
+      HOSTNAME: "CS16 Platform | Arena 3v3"
+    ports:
+      - "27017:27017/udp"
+      - "27017:27017/tcp"
+    volumes:
+      - ../server/arena:/opt/cs16
 
   postgres:
-    image: postgres:17
-    container_name: cs16-postgres
+    image: postgres:16
+    container_name: cs-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: csplatform
+      POSTGRES_USER: csadmin
+      POSTGRES_PASSWORD: csadmin123
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ../database/postgres:/var/lib/postgresql/data
 
-volumes:
-  postgres_data:
+  redis:
+    image: redis:7-alpine
+    container_name: cs-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cs-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../database/grafana:/var/lib/grafana
+
+  nginx:
+    image: nginx:alpine
+    container_name: cs-fastdl
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ../fastdl:/usr/share/nginx/html:ro

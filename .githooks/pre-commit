@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -e
+
+echo "[1/4] ShellCheck..."
+
+find deploy -type f -name "*.sh" -exec shellcheck {} +
+
+echo "[2/4] Dockerfile..."
+
+docker build -f docker/Dockerfile . >/dev/null
+
+echo "[3/4] Verify executable..."
+
+find deploy -type f -name "*.sh" ! -perm -111 -print | while read -r f; do
+    chmod +x "$f"
+done
+
+echo "[4/4] OK"
+
+exit 0

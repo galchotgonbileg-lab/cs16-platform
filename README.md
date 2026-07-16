@@ -12,3 +12,7 @@ Modern Counter-Strike 1.6 Server Platform
 - PostgreSQL
 - Web Dashboard
 - Docker
+
+## Development
+
+- Install repo hooks with `make hooks`
