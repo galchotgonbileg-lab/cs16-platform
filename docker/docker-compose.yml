@@ -4,6 +4,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+    image: cs16-platform:latest
     container_name: cs16-dm
     hostname: cs16-dm
     restart: unless-stopped
@@ -14,48 +15,51 @@ services:
       MAXPLAYERS: 32
       HOSTNAME: "CS16 Platform | DeathMatch"
     ports:
-      - "27015:27015/udp"
       - "27015:27015/tcp"
+      - "27015:27015/udp"
     volumes:
       - ../server/dm:/opt/cs16
+      - ../plugins:/opt/plugins
 
   cs16-5v5:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    image: cs16-platform:latest
     container_name: cs16-5v5
     hostname: cs16-5v5
     restart: unless-stopped
+    depends_on:
+      - cs16-dm
     environment:
       MODE: competitive
       PORT: 27016
       MAP: de_inferno
       MAXPLAYERS: 10
-      HOSTNAME: "CS16 Platform | 5v5"
+      HOSTNAME: "CS16 Platform | Competitive"
     ports:
-      - "27016:27016/udp"
       - "27016:27016/tcp"
+      - "27016:27016/udp"
     volumes:
       - ../server/competitive:/opt/cs16
+      - ../plugins:/opt/plugins
 
   cs16-3v3:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    image: cs16-platform:latest
     container_name: cs16-3v3
     hostname: cs16-3v3
     restart: unless-stopped
+    depends_on:
+      - cs16-dm
     environment:
       MODE: arena
       PORT: 27017
       MAP: de_nuke
       MAXPLAYERS: 6
-      HOSTNAME: "CS16 Platform | Arena 3v3"
+      HOSTNAME: "CS16 Platform | Arena"
     ports:
-      - "27017:27017/udp"
       - "27017:27017/tcp"
+      - "27017:27017/udp"
     volumes:
       - ../server/arena:/opt/cs16
+      - ../plugins:/opt/plugins
 
   postgres:
     image: postgres:16
@@ -86,7 +90,7 @@ services:
     volumes:
       - ../database/grafana:/var/lib/grafana
 
-  nginx:
+  fastdl:
     image: nginx:alpine
     container_name: cs-fastdl
     restart: unless-stopped
@@ -94,3 +98,24 @@ services:
       - "8080:80"
     volumes:
       - ../fastdl:/usr/share/nginx/html:ro
+      services:
+
+  api:
+    build:
+      context: ./api
+    container_name: cs-api
+    restart: unless-stopped
+
+    ports:
+      - "8000:8000"
+
+    environment:
+      REDIS_HOST: cs-redis
+      POSTGRES_HOST: cs-postgres
+
+    depends_on:
+      - cs-postgres
+      - cs-redis
+
+    networks:
+      - cs-network
